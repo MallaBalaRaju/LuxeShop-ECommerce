@@ -64,13 +64,12 @@ pipeline {
 
         stage('Login To AWS ECR') {
             steps {
-                // FIXED: Now safely leveraging a standard AWS credentials provider block
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding', 
+                // FIXED: Using standard usernamePassword binding to fix the UnsupportedOperationException
+                withCredentials([usernamePassword(
                     credentialsId: 'aws-credentials-id', 
-                    accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
-                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                ]]) {
+                    usernameVariable: 'AWS_ACCESS_KEY_ID', 
+                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                )]) {
                     sh '''
                         aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
                         aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
