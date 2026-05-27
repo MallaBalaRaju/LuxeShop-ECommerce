@@ -19,9 +19,9 @@ pipeline {
 
         stage('Clone Source Code') {
             steps {
+                // Cloning code using the default system git installation to avoid configuration issues
                 git(
                     branch: 'main',
-                    credentialsId: 'github-creds',
                     url: "${GIT_REPO}"
                 )
             }
@@ -64,12 +64,11 @@ pipeline {
 
         stage('Login To AWS ECR') {
             steps {
-                // FIXED: Using standard usernamePassword binding to fix the UnsupportedOperationException
-                withCredentials([usernamePassword(
-                    credentialsId: 'aws-credentials-id', 
-                    usernameVariable: 'AWS_ACCESS_KEY_ID', 
-                    passwordVariable: 'AWS_SECRET_ACCESS_KEY'
-                )]) {
+                // MATCHED TO YOUR VAULT: Extracting keys directly from your separate Jenkins system IDs
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                ]) {
                     sh '''
                         aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
                         aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
