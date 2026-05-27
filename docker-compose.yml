@@ -1,0 +1,87 @@
+version: '3.8'
+
+networks:
+  luxeshop-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
+
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: mongo-container
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - luxeshop-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    image: ecommerce-backend:latest
+    container_name: backend-container
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongo:27017/luxeshop
+      - JWT_SECRET=luxeshop_super_secret_jwt_key
+    networks:
+      luxeshop-network:
+        aliases:
+          - backend-service
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build: ./frontend
+    image: ecommerce-frontend:latest
+    container_name: frontend-container
+    ports:
+      - "3000:3000"
+    networks:
+      - luxeshop-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-container
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - luxeshop-network
+    restart: always
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-container
+    ports:
+      - "3005:3000"
+    networks:
+      - luxeshop-network
+    restart: always

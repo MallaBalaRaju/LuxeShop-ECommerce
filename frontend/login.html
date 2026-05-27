@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Login to LuxeShop.">
+    <title>LuxeShop | Login</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <header>
+        <nav class="navbar">
+            <a href="index.html" class="logo" id="logo-btn">
+                <i class="fa-solid fa-gem"></i> LuxeShop
+            </a>
+            <ul class="nav-links">
+                <li><a href="index.html" id="nav-home">Home</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Login Form -->
+    <div class="form-container">
+        <div class="form-header">
+            <h2>Welcome Back</h2>
+            <p>Access your premium shopping account</p>
+        </div>
+        <form id="login-form">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" class="form-control" placeholder="you@example.com" required autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" style="width:100%; margin-top: 1rem;">Log In</button>
+        </form>
+        <div class="form-footer">
+            <p>Don't have an account? <a href="signup.html">Create one</a></p>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 LuxeShop. All rights reserved. Built with premium MERN stack & DevOps best practices.</p>
+    </footer>
+
+    <script>
+        // Simple toast implementation for pages that need it
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icon = type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
+            toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Login flow
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    showToast('Logged in successfully! Redirecting...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                } else {
+                    showToast(data.message || 'Login failed. Please check credentials.', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Unable to connect to the backend server.', 'error');
+            }
+        });
+    </script>
+</body>
+</html>
