@@ -21,8 +21,12 @@ variable "cluster_name" {
   default = "jenkins-eks-cluster"
 }
 
-variable "ecr_repo_name" {
-  default = "myapp"
+variable "backend_repo_name" {
+  default = "backend"
+}
+
+variable "frontend_repo_name" {
+  default = "frontend"
 }
 
 # =========================
@@ -133,16 +137,22 @@ resource "aws_security_group" "eks_sg" {
 }
 
 # =========================
-# ECR REPOSITORY
+# ECR REPOSITORIES
 # =========================
 
-resource "aws_ecr_repository" "repo" {
-  name = var.ecr_repo_name
-
+resource "aws_ecr_repository" "backend_repo" {
+  name                 = var.backend_repo_name
   image_scanning_configuration {
     scan_on_push = true
   }
+  force_delete = true
+}
 
+resource "aws_ecr_repository" "frontend_repo" {
+  name                 = var.frontend_repo_name
+  image_scanning_configuration {
+    scan_on_push = true
+  }
   force_delete = true
 }
 
@@ -155,12 +165,10 @@ resource "aws_iam_role" "eks_cluster_role" {
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-
     Statement = [
       {
         Action = "sts:AssumeRole"
         Effect = "Allow"
-
         Principal = {
           Service = "eks.amazonaws.com"
         }
@@ -183,12 +191,10 @@ resource "aws_iam_role" "node_role" {
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-
     Statement = [
       {
         Action = "sts:AssumeRole"
         Effect = "Allow"
-
         Principal = {
           Service = "ec2.amazonaws.com"
         }
@@ -225,7 +231,6 @@ resource "aws_eks_cluster" "eks" {
       aws_subnet.subnet1.id,
       aws_subnet.subnet2.id
     ]
-
     security_group_ids = [
       aws_security_group.eks_sg.id
     ]
@@ -251,9 +256,9 @@ resource "aws_eks_node_group" "node_group" {
   ]
 
   scaling_config {
-    desired_size = 2
-    max_size     = 2
-    min_size     = 1
+    desired_size = 4
+    max_size     = 4
+    min_size     = 2
   }
 
   instance_types = ["t3.micro"]
@@ -269,8 +274,12 @@ resource "aws_eks_node_group" "node_group" {
 # OUTPUTS
 # =========================
 
-output "ecr_repository_url" {
-  value = aws_ecr_repository.repo.repository_url
+output "backend_ecr_repository_url" {
+  value = aws_ecr_repository.backend_repo.repository_url
+}
+
+output "frontend_ecr_repository_url" {
+  value = aws_ecr_repository.frontend_repo.repository_url
 }
 
 output "eks_cluster_name" {

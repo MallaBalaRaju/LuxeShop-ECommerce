@@ -16,8 +16,11 @@ spec:
     spec:
       containers:
       - name: backend
-        image: ecommerce-backend:latest # Switch to AWS ECR URI when running fully in ECR environment
-        imagePullPolicy: IfNotPresent # Allows using locally built images inside Minikube
+        # FIXED: Pointing directly to your active AWS ECR Registry URL
+        image: 606030504453.dkr.ecr.ap-south-1.amazonaws.com/backend:latest 
+        
+        # FIXED: Forces AWS EKS to pull down the freshly built image from ECR
+        imagePullPolicy: Always 
         ports:
         - containerPort: 5000
         env:
