@@ -185,4 +185,3 @@ A declarative `Jenkinsfile` is provided in the project root. It executes under W
    * Set Prometheus Server URL to `http://prometheus:9090` (internal network DNS name) and click **Save & test**.
    * Build dashboards using exported metrics (e.g., `http_requests_total`).
 
-echo "Webhook Test" >> test.txt
