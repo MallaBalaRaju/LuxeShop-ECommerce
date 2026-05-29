@@ -3,10 +3,9 @@ kind: Service
 metadata:
   name: frontend-service
 spec:
+  type: LoadBalancer
   ports:
-  - port: 3000
-    targetPort: 3000
-    nodePort: 30007
+  - port: 80         # <-- Change this to 80. Now you can use the raw URL in your browser!
+    targetPort: 3000 # <-- Keep this at 3000 so it hits your frontend container port correctly
   selector:
     app: frontend
-  type: NodePort
