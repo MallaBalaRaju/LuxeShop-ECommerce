@@ -36,21 +36,111 @@ const seedProductsData = [
         price: 349.99,
         category: "Furniture",
         image: "https://images.unsplash.com/photo-1505797149-43b0069ec26b?auto=format&fit=crop&w=600&q=80"
+    },
+    {
+        name: "Prism 4K Webcam",
+        description: "Ultra-HD 4K webcam with auto-focus, background blur, and dual noise-canceling microphones.",
+        price: 149.99,
+        category: "Electronics",
+        image: "https://images.unsplash.com/photo-1587826080692-f439cd0b70da?auto=format&fit=crop&w=600&q=80"
+    },
+    {
+        name: "Nova Portable SSD 2TB",
+        description: "Blazing fast portable SSD with USB-C connectivity, 2000MB/s read speeds, and IP55 rating.",
+        price: 189.99,
+        category: "Electronics",
+        image: "https://images.unsplash.com/photo-1597872200969-2b65d56bd16b?auto=format&fit=crop&w=600&q=80"
+    },
+    {
+        name: "Eclipse Smart Watch Pro",
+        description: "Premium smartwatch with AMOLED display, health monitoring, GPS, and 7-day battery life.",
+        price: 399.99,
+        category: "Wearables",
+        image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80"
     }
 ];
 
-// Get all products. Auto-seeds if empty.
+/**
+ * Get products with search, filter, sort, and pagination
+ * 
+ * Query parameters:
+ *   ?search=keyboard       — text search on name and description
+ *   ?category=Electronics  — filter by category
+ *   ?minPrice=50           — minimum price filter
+ *   ?maxPrice=200          — maximum price filter
+ *   ?sort=price_asc        — sort order (price_asc, price_desc, name_asc, name_desc, newest)
+ *   ?page=1                — page number
+ *   ?limit=12              — items per page
+ */
 exports.getProducts = async (req, res) => {
     try {
-        let products = await Product.find({});
-        
-        if (products.length === 0) {
+        // Check if DB is empty and seed if needed
+        const count = await Product.countDocuments();
+        if (count === 0) {
             console.log("Database is empty. Seeding default premium products...");
             await Product.insertMany(seedProductsData);
-            products = await Product.find({});
         }
-        
-        res.status(200).json(products);
+
+        // Build query filter
+        const filter = {};
+
+        // Text search
+        if (req.query.search) {
+            const searchRegex = new RegExp(req.query.search, 'i');
+            filter.$or = [
+                { name: searchRegex },
+                { description: searchRegex }
+            ];
+        }
+
+        // Category filter
+        if (req.query.category) {
+            filter.category = new RegExp(`^${req.query.category}$`, 'i');
+        }
+
+        // Price range filter
+        if (req.query.minPrice || req.query.maxPrice) {
+            filter.price = {};
+            if (req.query.minPrice) filter.price.$gte = parseFloat(req.query.minPrice);
+            if (req.query.maxPrice) filter.price.$lte = parseFloat(req.query.maxPrice);
+        }
+
+        // Sort configuration
+        let sortOption = { createdAt: -1 }; // Default: newest first
+        if (req.query.sort) {
+            switch (req.query.sort) {
+                case 'price_asc': sortOption = { price: 1 }; break;
+                case 'price_desc': sortOption = { price: -1 }; break;
+                case 'name_asc': sortOption = { name: 1 }; break;
+                case 'name_desc': sortOption = { name: -1 }; break;
+                case 'newest': sortOption = { createdAt: -1 }; break;
+                default: sortOption = { createdAt: -1 };
+            }
+        }
+
+        // Pagination
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 12;
+        const skip = (page - 1) * limit;
+
+        // Execute query
+        const products = await Product.find(filter)
+            .sort(sortOption)
+            .skip(skip)
+            .limit(limit);
+
+        const total = await Product.countDocuments(filter);
+
+        // Get available categories for filter UI
+        const categories = await Product.distinct('category');
+
+        res.status(200).json({
+            products,
+            currentPage: page,
+            totalPages: Math.ceil(total / limit),
+            totalProducts: total,
+            categories
+        });
     } catch (error) {
         console.error("Error in getProducts:", error);
         res.status(500).json({ message: "Server error fetching products", error: error.message });

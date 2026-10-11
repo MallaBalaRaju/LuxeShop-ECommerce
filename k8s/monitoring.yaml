@@ -1,0 +1,160 @@
+# ===================================================================
+# LuxeShop Observability Manifest (Prometheus, Grafana, Alert Rules)
+# ===================================================================
+
+# 1. Prometheus Scrape Configuration ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+    rule_files:
+      - /etc/prometheus/rules/*.yml
+    scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+      - job_name: 'ecommerce-backend'
+        metrics_path: '/metrics'
+        static_configs:
+          - targets: ['backend-service:5000']
+---
+# 2. Prometheus Alert Rules ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alert-rules
+data:
+  alert-rules.yml: |
+    groups:
+      - name: luxeshop-alerts
+        rules:
+          - alert: BackendServiceDown
+            expr: up{job="ecommerce-backend"} == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "LuxeShop backend microservice is down"
+          - alert: HighHttpErrorRate
+            expr: rate(http_requests_total{status_code=~"5.."}[2m]) > 0.05
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High HTTP 5xx Error Rate detected"
+---
+# 3. Prometheus Server Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-deployment
+  labels:
+    app: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:latest
+          ports:
+            - containerPort: 9090
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/prometheus
+            - name: rules-volume
+              mountPath: /etc/prometheus/rules
+      volumes:
+        - name: config-volume
+          configMap:
+            name: prometheus-config
+        - name: rules-volume
+          configMap:
+            name: prometheus-alert-rules
+---
+# 4. Prometheus NodePort Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-service
+  labels:
+    app: prometheus
+spec:
+  type: NodePort
+  ports:
+    - port: 9090
+      targetPort: 9090
+      nodePort: 30090
+  selector:
+    app: prometheus
+---
+# 5. Grafana Credentials Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-secret
+type: Opaque
+stringData:
+  admin-user: "admin"
+  admin-password: "admin_secure_password"
+---
+# 6. Grafana Dashboard Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana-deployment
+  labels:
+    app: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-secret
+                  key: admin-user
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-secret
+                  key: admin-password
+---
+# 7. Grafana NodePort Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-service
+  labels:
+    app: grafana
+spec:
+  type: NodePort
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30005
+  selector:
+    app: grafana

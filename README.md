@@ -1,28 +1,37 @@
-# Premium MERN E-Commerce DevOps Project
+# 💎 LuxeShop | Cloud-Native E-Commerce & DevOps Platform
+### Coursework: INT378 Advancements in Cloud and DevOps
 
-Welcome to the **MERN E-Commerce DevOps Project** (LuxeShop). This project implements a high-performance e-commerce catalog application featuring a premium modern dark-themed glassmorphism interface, coupled with an Express/MongoDB backend, automated containerization via Docker, orchestration on local Kubernetes (Minikube), Infrastructure as Code (IaC) via Terraform, and metric monitoring with Prometheus and Grafana.
+A production-grade, highly available e-commerce microservices catalog application built with modern web technologies, Docker containerization, Kubernetes orchestration, Infrastructure as Code (Terraform & AWS CloudFormation), DevSecOps CI/CD automation via Jenkins, and Prometheus/Grafana observability.
 
 ---
 
 ## 🏗️ Architecture Overview
 
-The system architecture consists of five core service tiers:
+The system architecture consists of five decoupled service layers designed for resilience, automated scaling, and observability:
 
 ```mermaid
 graph TD
-    Client[Browser Frontend - Port 3000] -->|HTTP Requests| Nginx[Nginx Web Server - Port 3000]
-    Nginx -->|Proxy Pass /api/| Backend[Express.js API - Port 5000]
-    Backend -->|Database Queries| Mongo[(MongoDB Database - Port 27017)]
-    Prometheus[Prometheus - Port 9090] -->|Scrapes /metrics| Backend
-    Grafana[Grafana - Port 3005] -->|Scrapes| Prometheus
+    Client[Browser Client] -->|HTTPS / Ingress| Nginx[Frontend Nginx Service - Port 3000]
+    Nginx -->|Reverse Proxy /api/| Backend[Express.js API Microservice - Port 5000]
+    Backend -->|Mongoose DB Connection| Mongo[(MongoDB Instance - Port 27017)]
+    Prometheus[Prometheus Server - Port 9090] -->|Scrapes /metrics| Backend
+    Grafana[Grafana Dashboard - Port 3005] -->|Queries| Prometheus
+    Jenkins[Jenkins CI/CD Pipeline] -->|Automated Tests & Trivy Scan| ECR[(AWS ECR)]
+    Terraform[Terraform Modular IaC] -->|Provisions VPC, SG, ECR & EKS| AWS[(AWS Cloud ap-south-1)]
 ```
 
-1. **Frontend**: Pure HTML5, JavaScript (ES6+), and Vanilla CSS static files, styled with glassmorphism and the Google Outfit font, served using **Nginx** (listening on port 3000). It features event delegation, local storage shopping cart synchronization, dynamic product updates, and interactive notifications.
-2. **Backend**: A **Node.js/Express.js** web api exposing authentication endpoints (JWT validation, bcrypt password hashing) and product query APIs, exposing prometheus metrics aggregator under `/metrics` and running health checks under `/health`.
-3. **Database**: **MongoDB** instance serving persistent product catalogs and user profile stores.
-4. **CI/CD**: **Jenkins Pipeline** executing AWS CLI authentication, Terraform applies, and ECR container image pushes.
-5. **IaC**: **Terraform** provisioning AWS ECR (Elastic Container Registry) repositories for application artifact distribution.
-6. **Monitoring**: **Prometheus** scraper pulling API usage statistics from the backend, feeding data to **Grafana** dashboards.
+### Core Components
+1. **Frontend**: Pure HTML5, Vanilla ES6+ JavaScript, and responsive HSL Glassmorphism CSS served via **Nginx Alpine**. Includes real-time catalog search, category pills, wishlist drawer, interactive cart drawer, promo discounts, and system status indicator.
+2. **Backend**: **Node.js 20 / Express.js** REST API implementing JWT authentication, bcrypt password hashing, MongoDB models, rate limiting, automated Jest unit tests, and native Prometheus metrics (`/metrics`).
+3. **Database**: Persistent **MongoDB 6.0** containerized with Kubernetes PersistentVolumeClaim (`mongo-pvc`).
+4. **Container Orchestration**: 
+   - Local multi-service composition via `docker-compose.yml`.
+   - Production orchestration on **Kubernetes (AWS EKS / Minikube)** with Horizontal Pod Autoscaler (HPA), Ingress controllers, and isolated NetworkPolicies.
+5. **Infrastructure as Code (IaC)**:
+   - **Modular Terraform**: Clean separation into `provider.tf`, `variables.tf`, `vpc.tf`, `security.tf`, `ecr.tf`, `eks.tf`, and `outputs.tf`.
+   - **AWS CloudFormation**: Declarative `cloudformation/template.yaml` for VPC, EC2, and S3 provisioning.
+6. **DevSecOps & CI/CD**: Declarative `Jenkinsfile` orchestrating code checkout, Jest unit tests, Docker builds, Trivy container vulnerability scanning, AWS ECR publication, and automated Kubernetes rollouts.
+7. **Observability**: **Prometheus** scraper scraping custom latency/throughput counters and alert rules (`k8s/prometheus-rules.yaml`), rendered on live **Grafana** dashboards.
 
 ---
 
@@ -30,158 +39,118 @@ graph TD
 
 ```
 ├── backend/
-│   ├── controllers/      # Database query and JWT route logic
-│   ├── models/           # Mongoose schemas (User, Product)
-│   ├── routes/           # Routing middleware
-│   ├── Dockerfile        # Node.js alpine execution script
-│   ├── package.json      # Backend node modules
-│   └── server.js         # Entry point, database connections, prometheus metrics
+│   ├── controllers/            # Business logic (Auth, Products, Orders, Wishlist)
+│   ├── middleware/             # JWT auth, rate limiter, input validator
+│   ├── models/                 # Mongoose schemas (User, Product, Order, Wishlist)
+│   ├── routes/                 # Express route definitions
+│   ├── tests/                  # Automated Jest unit tests (CI/CD integration)
+│   ├── Dockerfile              # Production Node.js 20 Alpine builder
+│   ├── package.json            # Node.js dependencies and test scripts
+│   └── server.js               # Entry point, DB connection, Prometheus metrics
 ├── frontend/
-│   ├── index.html        # Catalog page UI
-│   ├── login.html        # Authentication Login interface
-│   ├── signup.html       # Authentication Registration interface
-│   ├── styles.css        # Responsive, custom HSL glassmorphism style rules
-│   ├── script.js         # API integration, cart management, notification script
-│   ├── Dockerfile        # Nginx alpine static files builder
-│   └── nginx.conf        # Proxy pass rule and static assets server config
-├── k8s/                  # Kubernetes deployment manifests
-│   ├── backend-deployment.yaml
-│   ├── backend-service.yaml
-│   ├── frontend-deployment.yaml
-│   ├── frontend-service.yaml
-│   ├── mongo-deployment.yaml
-│   └── mongo-service.yaml
+│   ├── index.html              # Modern glassmorphism e-commerce storefront
+│   ├── login.html              # User authentication login interface
+│   ├── signup.html             # User registration interface
+│   ├── styles.css              # Custom HSL glassmorphism design tokens
+│   ├── script.js               # Client-side filtering, cart, wishlist, and API integration
+│   ├── Dockerfile              # Static Nginx Alpine container builder
+│   └── nginx.conf              # Reverse proxy & static assets configuration
+├── k8s/                        # Consolidated Kubernetes Manifests
+│   ├── app.yaml                # Backend, Frontend, HPA, Ingress, NetworkPolicy & Secrets
+│   ├── database.yaml           # MongoDB PVC, Deployment, and Service
+│   └── monitoring.yaml         # Prometheus & Grafana Deployments, Services, Configs & Alerts
+├── terraform/                  # Minimal Infrastructure as Code (AWS ap-south-1)
+│   ├── main.tf                 # Provider, VPC, Security, ECR, and EKS Cluster
+│   └── variables.tf            # Configurable inputs and cluster outputs
+├── cloudformation/             # Alternative IaC Stack
+│   └── template.yaml           # AWS CloudFormation template for VPC, EC2, and S3
 ├── monitoring/
-│   └── prometheus.yml    # Scraper job configurations
-├── terraform/            # IaC definitions for AWS ECR
-│   ├── main.tf
-│   ├── outputs.tf
-│   ├── provider.tf
-│   └── variables.tf
-├── docker-compose.yml    # Development orchestration compose configuration
-├── Jenkinsfile           # Windows CI/CD Pipeline pipeline execution
-└── README.md             # Project documentation (this file)
+│   └── prometheus.yml          # Prometheus local scraping configuration
+├── docker-compose.yml          # Multi-container local orchestration
+├── Jenkinsfile                 # DevSecOps automated CI/CD pipeline
+└── README.md                   # Project documentation
 ```
 
 ---
 
-## 🚀 Execution Guide
+## 🚀 Execution & Quick Start Guide
 
-### 1. Local Run via Docker Compose
+### 1. Local Development via Docker Compose
 
-Spin up the entire stack (App, DB, Monitoring) with a single command:
+Launch the entire 5-tier microservices stack with a single command:
 
 ```powershell
-# Build and launch all services in background
-docker-compose up -d --build
-
-# Verify running containers
-docker-compose ps
+docker compose up -d --build
 ```
 
-* **Frontend Access**: Navigate to [http://localhost:3000](http://localhost:3000)
-* **Backend API**: Check server status at [http://localhost:5000/health](http://localhost:5000/health)
-* **Prometheus Metrics**: Scrape details at [http://localhost:5000/metrics](http://localhost:5000/metrics)
-* **Prometheus Dashboard**: Connect to [http://localhost:9090](http://localhost:9090)
-* **Grafana Dashboard**: Monitor system health at [http://localhost:3005](http://localhost:3005) (Default credentials: `admin` / `admin`)
+Access services locally:
+* **Frontend Web App**: [http://localhost:3000](http://localhost:3000)
+* **Backend API Health**: [http://localhost:5000/health](http://localhost:5000/health)
+* **Prometheus Metrics**: [http://localhost:5000/metrics](http://localhost:5000/metrics)
+* **Prometheus Explorer**: [http://localhost:9090](http://localhost:9090)
+* **Grafana Dashboard**: [http://localhost:3005](http://localhost:3005) (Default: `admin` / `admin`)
 
-To shut down and wipe container state:
+To stop all services and preserve data:
 ```powershell
-docker-compose down -v
+docker compose down
 ```
 
 ---
 
-### 2. Local Kubernetes Deployment (Minikube)
+### 2. Automated Unit Testing (CI/CD Verification)
 
-Follow these instructions to run the application in a local Kubernetes cluster:
+Run backend tests before deployment:
 
-#### Step 2.1: Start Minikube
 ```powershell
-minikube start --driver=docker
-```
-
-#### Step 2.2: Configure Shell to use Minikube's Docker Daemon
-Expose the local Minikube docker environment to build the images inside the cluster context:
-```powershell
-# For Windows PowerShell
-minikube docker-env | Invoke-Expression
-```
-
-#### Step 2.3: Build Local Docker Images inside Minikube
-```powershell
-docker build -t ecommerce-frontend:latest ./frontend
-docker build -t ecommerce-backend:latest ./backend
-```
-
-#### Step 2.4: Deploy Manifests
-Deploy the MongoDB, backend API, and static frontend deployments and services:
-```powershell
-kubectl apply -f k8s/
-```
-
-#### Step 2.5: Verify Pods and Services
-```powershell
-kubectl get pods
-kubectl get service
-```
-Wait until all pods show `Running` and readiness checks pass.
-
-#### Step 2.6: Access the Application
-The frontend is configured as a `NodePort` service mapping to port `30007`. Fetch the direct URL using:
-```powershell
-minikube service frontend-service --url
-# Or open it directly in your browser:
-minikube service frontend-service
-```
-
-To clean up resources:
-```powershell
-kubectl delete -f k8s/
+cd backend
+npm test
 ```
 
 ---
 
-### 3. Provisioning AWS ECR with Terraform
+### 3. Deploying Infrastructure via Terraform
 
-Configure AWS ECR repositories for production release pipelines:
+Provision AWS VPC, ECR repositories, and EKS Cluster:
 
 ```powershell
-# Initialize and validate configurations
 cd terraform
 terraform init
 terraform validate
-
-# View planned resources (ECR repos: ecommerce-frontend & ecommerce-backend)
 terraform plan
-
-# Apply changes to create repositories on AWS
 terraform apply -auto-approve
 ```
 
 ---
 
-### 4. Jenkins CI/CD Setup (Windows Agent)
+### 4. Deploying Kubernetes Manifests
 
-A declarative `Jenkinsfile` is provided in the project root. It executes under Windows and automates resource creation and artifact publishing:
+Apply the entire containerized architecture to Kubernetes:
 
-1. **Pipeline Triggers**: Triggered manually or via webhook commits.
-2. **AWS Authentication**: Credentials must be defined in the Jenkins Credentials store using the ID `aws-credentials-id` (configure it as Username and Password containing the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`).
-3. **Pipeline Actions**:
-   * **Stage 1 (Checkout)**: Retrieves code from version control.
-   * **Stage 2 (Terraform Apply)**: Prepares the AWS target architecture, validating repositories.
-   * **Stage 3 (Login)**: authenticates local docker engine to AWS ECR.
-   * **Stage 4 (Build)**: Packages application artifacts into Docker images.
-   * **Stage 5 (Push)**: Publishes packaged images under your AWS Registry ID.
+```powershell
+# Apply all consolidated manifests (app, database, monitoring)
+kubectl apply -f k8s/
+```
+
+Verify running pods and services:
+```powershell
+kubectl get pods -l app=backend
+kubectl get pods -l app=frontend
+kubectl get hpa
+```
 
 ---
 
-## 📈 Monitoring Setup
+## 🔒 Updating AWS Credentials & Account ID
 
-1. **Prometheus Target Verification**: Log in to `http://localhost:9090/targets` to verify `ecommerce-backend` is showing state `UP`.
-2. **Grafana Metric dashboard integration**:
-   * Connect to Grafana at `http://localhost:3005` (user `admin` / pass `admin`).
-   * Navigate to **Connections -> Data Sources**, click **Add data source**, and select **Prometheus**.
-   * Set Prometheus Server URL to `http://prometheus:9090` (internal network DNS name) and click **Save & test**.
-   * Build dashboards using exported metrics (e.g., `http_requests_total`).
-
+To deploy to your own AWS Account:
+1. Open [Jenkinsfile](file:///c:/Btech/CLOUD%20COMPUTING%20AND%20DEVOPS%20ESSENTIALS/Project/Jenkinsfile) and update line 6:
+   ```groovy
+   AWS_ACCOUNT_ID = '<YOUR_NEW_12_DIGIT_ACCOUNT_ID>'
+   ```
+2. Update Jenkins Credentials (`Manage Jenkins` → `Credentials`):
+   - `aws-access-key-id` (Secret text)
+   - `aws-secret-access-key` (Secret text)
+3. Update local CLI credentials:
+   ```powershell
+   aws configure
+   ```

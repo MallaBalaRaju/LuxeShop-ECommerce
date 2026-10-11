@@ -3,84 +3,283 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="LuxeShop - Modern e-commerce application featuring premium products.">
-    <title>LuxeShop | Premium E-Commerce</title>
+    <meta name="description" content="LuxeShop - Ultra-modern, cloud-native luxury e-commerce catalog powered by MERN & Kubernetes.">
+    <title>LuxeShop | Premium Cloud-Native E-Commerce</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Navbar -->
-    <header>
-        <nav class="navbar">
-            <a href="index.html" class="logo" id="logo-btn">
-                <i class="fa-solid fa-gem"></i> LuxeShop
+    <!-- Background Glow Blobs -->
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+
+    <!-- Navigation Header -->
+    <header class="navbar-wrapper">
+        <nav class="navbar" id="main-nav">
+            <a href="index.html" class="brand-logo" id="logo-btn">
+                <span class="logo-icon"><i class="fa-solid fa-gem"></i></span>
+                <span class="logo-text">Luxe<span class="logo-highlight">Shop</span></span>
             </a>
-            <ul class="nav-links">
-                <li><a href="index.html" class="active" id="nav-home">Home</a></li>
-            </ul>
-            <div class="nav-actions">
-                <button class="cart-icon-btn" id="cart-toggle-btn" aria-label="Toggle Cart">
-                    <i class="fa-solid fa-bag-shopping"></i>
-                    <span class="cart-count" id="cart-count">0</span>
+
+            <!-- Search Bar in Header -->
+            <div class="nav-search-bar">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="global-search-input" placeholder="Search curated products, audio, gear..." autocomplete="off">
+                <button type="button" id="search-clear-btn" class="search-clear" style="display: none;">
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
-                <div id="auth-buttons">
-                    <a href="login.html" class="btn btn-outline" id="nav-login">Login</a>
+            </div>
+
+            <!-- Navigation Links -->
+            <ul class="nav-links">
+                <li><a href="#products-section" class="active" id="nav-catalog"><i class="fa-solid fa-compass"></i> Catalog</a></li>
+                <li><a href="#features-section" id="nav-features"><i class="fa-solid fa-layer-group"></i> Architecture</a></li>
+                <li><a href="/api/health" target="_blank" id="nav-health-link" class="badge-link"><span class="pulse-dot"></span> API Status</a></li>
+            </ul>
+
+            <!-- Action Buttons -->
+            <div class="nav-actions">
+                <button class="icon-btn wishlist-btn" id="wishlist-toggle-btn" aria-label="Wishlist">
+                    <i class="fa-regular fa-heart"></i>
+                    <span class="badge-count" id="wishlist-count">0</span>
+                </button>
+
+                <button class="icon-btn cart-btn" id="cart-toggle-btn" aria-label="Toggle Shopping Cart">
+                    <i class="fa-solid fa-bag-shopping"></i>
+                    <span class="badge-count" id="cart-count">0</span>
+                </button>
+
+                <div id="auth-buttons" class="auth-group">
+                    <a href="login.html" class="btn btn-outline" id="nav-login">Sign In</a>
                     <a href="signup.html" class="btn btn-primary" id="nav-signup">Sign Up</a>
                 </div>
             </div>
         </nav>
     </header>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <h1>Experience Premium Luxury Shopping</h1>
-        <p>Curated collections of the finest apparel, electronics, and accessories, handpicked to elevate your lifestyle.</p>
-        <a href="#products-section" class="btn btn-primary">Shop Now</a>
+    <!-- Hero Showcase Section -->
+    <section class="hero-showcase">
+        <div class="hero-content">
+            <div class="hero-pill-badge">
+                <span class="pill-sparkle"><i class="fa-solid fa-bolt"></i></span>
+                <span>Cloud-Native • Kubernetes EKS • Microservices</span>
+            </div>
+            <h1 class="hero-title">
+                Curated Luxury for the <br>
+                <span class="gradient-text">Modern Tech Generation</span>
+            </h1>
+            <p class="hero-subtitle">
+                Explore handcrafted tech essentials, studio audio, and ergonomic workspaces built on a resilient, auto-scaling cloud infrastructure.
+            </p>
+            <div class="hero-actions">
+                <a href="#products-section" class="btn btn-primary btn-lg">
+                    <i class="fa-solid fa-arrow-down"></i> Explore Collections
+                </a>
+                <a href="#features-section" class="btn btn-glass btn-lg">
+                    <i class="fa-solid fa-server"></i> Stack Overview
+                </a>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <span class="stat-number">99.99%</span>
+                    <span class="stat-label">K8s Uptime</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-number">&lt; 15ms</span>
+                    <span class="stat-label">Cache Latency</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-number">100%</span>
+                    <span class="stat-label">Encrypted JWT</span>
+                </div>
+            </div>
+        </div>
     </section>
 
     <!-- Main Container -->
     <main class="container">
-        <!-- Products Section -->
+        <!-- Products & Filter Section -->
         <section class="products-section" id="products-section">
-            <div class="section-title">
-                <h2>Our Collections</h2>
+            <div class="section-header">
+                <div>
+                    <h2 class="section-title">Signature Catalog</h2>
+                    <p class="section-desc">Hand-picked gear engineered for performance and aesthetic perfection.</p>
+                </div>
+
+                <!-- Sort Dropdown -->
+                <div class="sort-wrapper">
+                    <label for="sort-select" class="sort-label"><i class="fa-solid fa-arrow-down-wide-short"></i> Sort:</label>
+                    <select id="sort-select" class="custom-select">
+                        <option value="featured">Featured Picks</option>
+                        <option value="price_asc">Price: Low to High</option>
+                        <option value="price_desc">Price: High to Low</option>
+                        <option value="name_asc">Name: A to Z</option>
+                    </select>
+                </div>
             </div>
+
+            <!-- Category Filter Pills -->
+            <div class="category-pills" id="category-pills">
+                <button class="category-pill active" data-category="all">
+                    <i class="fa-solid fa-border-all"></i> All Products
+                </button>
+                <button class="category-pill" data-category="Electronics">
+                    <i class="fa-solid fa-microchip"></i> Electronics
+                </button>
+                <button class="category-pill" data-category="Audio">
+                    <i class="fa-solid fa-headphones"></i> Audio
+                </button>
+                <button class="category-pill" data-category="Wearables">
+                    <i class="fa-solid fa-clock"></i> Wearables
+                </button>
+                <button class="category-pill" data-category="Furniture">
+                    <i class="fa-solid fa-chair"></i> Furniture
+                </button>
+                <button class="category-pill" data-category="Home Decor">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Home Decor
+                </button>
+            </div>
+
+            <!-- Product Cards Grid -->
             <div class="products-grid" id="products-container">
-                <!-- Products will be dynamically generated by script.js -->
-                <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-secondary);">
-                    <i class="fa-solid fa-spinner fa-spin fa-2xl" style="margin-bottom: 1rem; color: var(--accent-color);"></i>
-                    <p>Loading curated products for you...</p>
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Connecting to LuxeShop microservices cluster...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- DevOps Architecture Highlights -->
+        <section class="features-section" id="features-section">
+            <div class="section-header center">
+                <h2 class="section-title">Under the Hood Architecture</h2>
+                <p class="section-desc">Designed according to INT378 Advancements in Cloud and DevOps standards.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card glass-card">
+                    <div class="feature-icon"><i class="fa-brands fa-docker"></i></div>
+                    <h3>Docker Microservices</h3>
+                    <p>Independent multi-stage Docker builds for frontend Nginx and backend Node.js microservices with health checks.</p>
+                </div>
+
+                <div class="feature-card glass-card">
+                    <div class="feature-icon"><i class="fa-solid fa-dharmachakra"></i></div>
+                    <h3>Kubernetes Autoscaling</h3>
+                    <p>Automated Horizontal Pod Autoscaler (HPA), Ingress controllers, and isolated NetworkPolicies.</p>
+                </div>
+
+                <div class="feature-card glass-card">
+                    <div class="feature-icon"><i class="fa-solid fa-cubes-stacked"></i></div>
+                    <h3>Terraform IaC</h3>
+                    <p>Declarative infrastructure provisioning for AWS VPC, Subnets, ECR repositories, and EKS Cluster.</p>
+                </div>
+
+                <div class="feature-card glass-card">
+                    <div class="feature-icon"><i class="fa-solid fa-chart-line"></i></div>
+                    <h3>Observability & Metrics</h3>
+                    <p>Prometheus scraper collecting live HTTP latency and connection metrics visualized on Grafana dashboards.</p>
                 </div>
             </div>
         </section>
     </main>
 
-    <!-- Slide-out Cart Panel -->
-    <div class="cart-panel" id="cart-panel">
+    <!-- Slide-out Shopping Cart Panel -->
+    <div class="cart-backdrop" id="cart-backdrop"></div>
+    <aside class="cart-panel" id="cart-panel" aria-label="Shopping Cart">
         <div class="cart-header">
-            <h3>Your Shopping Bag</h3>
-            <button class="close-cart-btn" id="close-cart-btn" aria-label="Close Cart">
+            <div class="cart-title-group">
+                <h3>Your Bag</h3>
+                <span class="cart-items-tag" id="cart-items-tag">0 items</span>
+            </div>
+            <button class="close-btn" id="close-cart-btn" aria-label="Close Bag">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
-        <div class="cart-items" id="cart-items-container">
-            <!-- Cart items will be dynamically generated -->
-        </div>
-        <div class="cart-footer">
-            <div class="cart-total">
-                <span>Total:</span>
-                <span id="cart-total-price">$0.00</span>
-            </div>
-            <button class="btn btn-primary checkout-btn" id="checkout-btn">Proceed to Checkout</button>
-        </div>
-    </div>
 
-    <!-- Toast Container -->
-    <div class="toast-container" id="toast-container"></div>
+        <div class="cart-items-container" id="cart-items-container">
+            <!-- Dynamically populated -->
+        </div>
+
+        <div class="cart-footer">
+            <div class="promo-box">
+                <input type="text" id="promo-input" placeholder="Promo code (try 'CLOUD10')">
+                <button type="button" id="promo-apply-btn" class="btn btn-outline btn-sm">Apply</button>
+            </div>
+
+            <div class="cart-summary">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span id="cart-subtotal">$0.00</span>
+                </div>
+                <div class="summary-row discount-row" id="discount-row" style="display: none;">
+                    <span>Discount</span>
+                    <span id="cart-discount" class="text-success">-$0.00</span>
+                </div>
+                <div class="summary-row total-row">
+                    <span>Total</span>
+                    <span id="cart-total-price">$0.00</span>
+                </div>
+            </div>
+
+            <button class="btn btn-primary btn-block checkout-btn" id="checkout-btn">
+                <i class="fa-solid fa-lock"></i> Secure Checkout
+            </button>
+        </div>
+    </aside>
+
+    <!-- Wishlist Drawer / Modal -->
+    <div class="wishlist-backdrop" id="wishlist-backdrop"></div>
+    <aside class="wishlist-panel" id="wishlist-panel" aria-label="Saved Items">
+        <div class="cart-header">
+            <div class="cart-title-group">
+                <h3>Saved Wishlist</h3>
+                <span class="cart-items-tag" id="wishlist-items-tag">0 items</span>
+            </div>
+            <button class="close-btn" id="close-wishlist-btn" aria-label="Close Wishlist">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="wishlist-items-container" id="wishlist-items-container">
+            <!-- Dynamically populated -->
+        </div>
+    </aside>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container" aria-live="polite"></div>
 
     <!-- Footer -->
-    <footer>
-        <p>&copy; 2026 LuxeShop. All rights reserved. Built with premium MERN stack & DevOps best practices.</p>
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-brand">
+                <a href="index.html" class="brand-logo">
+                    <span class="logo-icon"><i class="fa-solid fa-gem"></i></span>
+                    <span class="logo-text">Luxe<span class="logo-highlight">Shop</span></span>
+                </a>
+                <p>Engineered for high-concurrency cloud workloads with automated CI/CD and self-healing Kubernetes clusters.</p>
+            </div>
+            <div class="footer-links">
+                <h4>System Architecture</h4>
+                <ul>
+                    <li><a href="/api/health" target="_blank"><i class="fa-solid fa-heart-pulse"></i> Cluster Health</a></li>
+                    <li><a href="/metrics" target="_blank"><i class="fa-solid fa-chart-simple"></i> Prometheus Scrape</a></li>
+                    <li><a href="http://localhost:3005" target="_blank"><i class="fa-solid fa-gauge-high"></i> Grafana Monitor</a></li>
+                </ul>
+            </div>
+            <div class="footer-meta">
+                <h4>Coursework</h4>
+                <p>INT378 Advancements in Cloud and DevOps</p>
+                <p class="copyright">&copy; 2026 LuxeShop. High-Availability MERN + DevOps Project.</p>
+            </div>
+        </div>
     </footer>
 
     <script src="script.js"></script>

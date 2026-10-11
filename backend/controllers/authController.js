@@ -3,7 +3,10 @@ const jwt = require('jsonwebtoken');
 
 // Generate JWT Helper
 const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET || 'luxeshop_super_secret_jwt_key', {
+    if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET environment variable is required');
+    }
+    return jwt.sign({ id }, process.env.JWT_SECRET, {
         expiresIn: '30d'
     });
 };

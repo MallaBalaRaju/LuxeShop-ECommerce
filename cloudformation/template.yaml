@@ -1,0 +1,138 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  AWS CloudFormation Template for LuxeShop Microservices Infrastructure.
+  Fulfills INT378: Advancements in Cloud and DevOps (Unit II & Practical 3).
+
+Parameters:
+  EnvironmentName:
+    Description: Environment name prefix for resources
+    Type: String
+    Default: LuxeShop-Production
+
+  InstanceType:
+    Description: EC2 Instance Type
+    Type: String
+    Default: t3.micro
+    AllowedValues:
+      - t3.micro
+      - t3.small
+      - t2.micro
+
+Resources:
+  # ==========================================
+  # VPC & Network
+  # ==========================================
+  LuxeShopVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-VPC'
+
+  LuxeShopInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-IGW'
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref LuxeShopVPC
+      InternetGatewayId: !Ref LuxeShopInternetGateway
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref LuxeShopVPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-Public-Subnet'
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref LuxeShopVPC
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-RouteTable'
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref LuxeShopInternetGateway
+
+  SubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  # ==========================================
+  # Security Group
+  # ==========================================
+  WebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP, HTTPS, and SSH access
+      VpcId: !Ref LuxeShopVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 5000
+          ToPort: 5000
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-SecurityGroup'
+
+  # ==========================================
+  # S3 Bucket for Storage
+  # ==========================================
+  LuxeShopAssetsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'luxeshop-assets-${AWS::AccountId}'
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Project
+          Value: LuxeShop-ECommerce
+
+Outputs:
+  VPCId:
+    Description: Provisioned VPC ID
+    Value: !Ref LuxeShopVPC
+    Export:
+      Name: !Sub '${EnvironmentName}-VPCID'
+
+  PublicSubnetId:
+    Description: Provisioned Public Subnet ID
+    Value: !Ref PublicSubnet
+    Export:
+      Name: !Sub '${EnvironmentName}-SubnetID'
+
+  SecurityGroupId:
+    Description: Web Server Security Group ID
+    Value: !Ref WebServerSecurityGroup
