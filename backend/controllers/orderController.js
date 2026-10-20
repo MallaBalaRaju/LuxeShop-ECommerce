@@ -1,5 +1,6 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const mongoose = require('mongoose');
 
 /**
  * Create a new order
@@ -19,6 +20,17 @@ exports.createOrder = async (req, res) => {
         const orderItems = [];
 
         for (const item of items) {
+            // Validate the product ID is a valid MongoDB ObjectId
+            if (!mongoose.Types.ObjectId.isValid(item.product)) {
+                return res.status(400).json({ message: `Invalid product ID: ${item.product}` });
+            }
+
+            // Validate quantity: must be a positive integer
+            const qty = item.quantity;
+            if (qty === undefined || qty === null || !Number.isInteger(qty) || qty <= 0) {
+                return res.status(400).json({ message: `Invalid quantity for product ${item.product}: must be a positive integer` });
+            }
+
             const product = await Product.findById(item.product);
             if (!product) {
                 return res.status(404).json({ message: `Product not found: ${item.product}` });
@@ -28,10 +40,10 @@ exports.createOrder = async (req, res) => {
                 product: product._id,
                 name: product.name,
                 price: product.price,
-                quantity: item.quantity || 1
+                quantity: qty
             });
 
-            totalPrice += product.price * (item.quantity || 1);
+            totalPrice += product.price * qty;
         }
 
         const order = await Order.create({
@@ -39,8 +51,8 @@ exports.createOrder = async (req, res) => {
             items: orderItems,
             totalPrice,
             shippingAddress: shippingAddress || {},
-            status: 'confirmed',
-            paymentStatus: 'completed'
+            status: 'pending',
+            paymentStatus: 'pending'
         });
 
         res.status(201).json({
@@ -91,6 +103,11 @@ exports.getMyOrders = async (req, res) => {
  */
 exports.getOrderById = async (req, res) => {
     try {
+        // Validate ObjectId before querying to avoid CastError → 500
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: 'Invalid order ID' });
+        }
+
         const order = await Order.findById(req.params.id)
             .populate('items.product', 'name image price');
 
@@ -117,6 +134,11 @@ exports.getOrderById = async (req, res) => {
  */
 exports.cancelOrder = async (req, res) => {
     try {
+        // Validate ObjectId before querying to avoid CastError → 500
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: 'Invalid order ID' });
+        }
+
         const order = await Order.findById(req.params.id);
 
         if (!order) {
@@ -128,7 +150,7 @@ exports.cancelOrder = async (req, res) => {
         }
 
         if (['shipped', 'delivered', 'cancelled'].includes(order.status)) {
-            return res.status(400).json({ message: `Cannot cancel an order that is ${order.status}` });
+            return res.status(400).json({ message: `Cannot cancel an order that is already ${order.status}` });
         }
 
         order.status = 'cancelled';
