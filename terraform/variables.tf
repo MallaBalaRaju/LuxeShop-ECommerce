@@ -1,62 +1,54 @@
 # ===================================================================
-# Variables & Outputs Configuration
+# Terraform Variables
 # ===================================================================
 
 variable "aws_region" {
-  description = "AWS deployment region"
+  description = "AWS region to deploy to"
   type        = string
   default     = "ap-south-1"
 }
 
-variable "cluster_name" {
-  description = "Name of the AWS EKS Cluster"
-  type        = string
-  default     = "jenkins-eks-cluster"
-}
-
 variable "backend_repo_name" {
-  description = "ECR repository name for backend"
+  description = "ECR repository name for backend Docker image"
   type        = string
   default     = "backend"
 }
 
 variable "frontend_repo_name" {
-  description = "ECR repository name for frontend"
+  description = "ECR repository name for frontend Docker image"
   type        = string
   default     = "frontend"
 }
 
-variable "vpc_cidr" {
-  description = "VPC CIDR range"
+variable "instance_type" {
+  description = "EC2 instance type (t2.micro is free-tier eligible)"
   type        = string
-  default     = "10.0.0.0/16"
+  default     = "t2.micro"
 }
 
-variable "node_instance_types" {
-  description = "EC2 instance types for EKS worker nodes"
-  type        = list(string)
-  default     = ["t3.micro"]
+# ─── Outputs ─────────────────────────────────────────────────────────
+
+output "backend_ecr_url" {
+  description = "URL to push backend Docker image to ECR"
+  value       = aws_ecr_repository.backend.repository_url
 }
 
-# ==========================================
-# Outputs
-# ==========================================
-output "vpc_id" {
-  value = aws_vpc.main.id
+output "frontend_ecr_url" {
+  description = "URL to push frontend Docker image to ECR"
+  value       = aws_ecr_repository.frontend.repository_url
 }
 
-output "eks_cluster_name" {
-  value = aws_eks_cluster.eks.name
+output "s3_bucket_name" {
+  description = "Name of the S3 assets bucket"
+  value       = aws_s3_bucket.assets.id
 }
 
-output "eks_cluster_endpoint" {
-  value = aws_eks_cluster.eks.endpoint
+output "ec2_public_ip" {
+  description = "Public IP of the EC2 app server"
+  value       = aws_instance.app_server.public_ip
 }
 
-output "backend_ecr_repository_url" {
-  value = aws_ecr_repository.backend_repo.repository_url
-}
-
-output "frontend_ecr_repository_url" {
-  value = aws_ecr_repository.frontend_repo.repository_url
+output "ec2_instance_id" {
+  description = "EC2 instance ID"
+  value       = aws_instance.app_server.id
 }

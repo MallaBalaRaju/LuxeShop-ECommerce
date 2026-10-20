@@ -1,5 +1,3 @@
-version: '3.8'
-
 networks:
   luxeshop-network:
     driver: bridge
@@ -8,22 +6,27 @@ volumes:
   mongo-data:
 
 services:
+
+  # ─── MongoDB Database ────────────────────────────────
   mongo:
     image: mongo:6.0
     container_name: mongo-container
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"   # Exposed only to localhost for security
+    environment:
+      - MONGO_INITDB_DATABASE=luxeshop
     volumes:
       - mongo-data:/data/db
     networks:
       - luxeshop-network
-    restart: always
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # ─── Node.js Backend API ─────────────────────────────
   backend:
     build: ./backend
     image: ecommerce-backend:latest
@@ -32,8 +35,11 @@ services:
       - "5000:5000"
     environment:
       - PORT=5000
-      - MONGO_URI=mongodb://mongo:27017/luxeshop
-      - JWT_SECRET=luxeshop_super_secret_jwt_key
+      - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/luxeshop}
+      - JWT_SECRET=${JWT_SECRET:-luxeshop_dev_jwt_secret_change_in_production}
+      - NODE_ENV=${NODE_ENV:-development}
+      # Allow requests from the frontend container and localhost
+      - ALLOWED_ORIGINS=http://localhost:3000,http://frontend-container:3000
     networks:
       luxeshop-network:
         aliases:
@@ -41,13 +47,14 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
-    restart: always
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:5000/health"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # ─── Nginx Frontend ──────────────────────────────────
   frontend:
     build: ./frontend
     image: ecommerce-frontend:latest
@@ -59,29 +66,35 @@ services:
     depends_on:
       backend:
         condition: service_healthy
-    restart: always
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # ─── Prometheus Monitoring ───────────────────────────
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus-container
     ports:
       - "9090:9090"
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     networks:
       - luxeshop-network
-    restart: always
+    restart: unless-stopped
 
+  # ─── Grafana Dashboard ───────────────────────────────
   grafana:
     image: grafana/grafana:latest
     container_name: grafana-container
     ports:
       - "3005:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin123}
+      - GF_USERS_ALLOW_SIGN_UP=false
     networks:
       - luxeshop-network
-    restart: always
+    restart: unless-stopped

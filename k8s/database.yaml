@@ -1,27 +1,16 @@
 # ===================================================================
-# LuxeShop Database Manifest — Persistent MongoDB Tier
+# LuxeShop Database Manifest — MongoDB StatefulSet
 # ===================================================================
 
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mongo-pvc
-  labels:
-    app: mongo
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 5Gi
----
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
-  name: mongo-deployment
+  name: mongo
+  namespace: luxeshop
   labels:
     app: mongo
 spec:
+  serviceName: mongo-service
   replicas: 1
   selector:
     matchLabels:
@@ -31,24 +20,76 @@ spec:
       labels:
         app: mongo
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
         - name: mongo
           image: mongo:6.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 27017
+              name: mongodb
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: MONGO_INITDB_ROOT_USERNAME
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo-secret
+                  key: MONGO_INITDB_ROOT_PASSWORD
+            - name: MONGO_INITDB_DATABASE
+              value: "luxeshop"
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+          readinessProbe:
+            exec:
+              command:
+                - mongosh
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - mongosh
+                - --eval
+                - "db.adminCommand('ping')"
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
           volumeMounts:
             - name: mongo-storage
               mountPath: /data/db
-      volumes:
-        - name: mongo-storage
-          persistentVolumeClaim:
-            claimName: mongo-pvc
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-storage
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        # 'standard' works with Minikube.
+        # For AWS EKS, change to 'gp2' or 'ebs-csi-gp3'.
+        storageClassName: standard
+        resources:
+          requests:
+            storage: 2Gi
 ---
+# ─── MongoDB Headless Service ─────────────────────────────────────────
 apiVersion: v1
 kind: Service
 metadata:
   name: mongo-service
+  namespace: luxeshop
   labels:
     app: mongo
 spec:
@@ -56,5 +97,6 @@ spec:
   ports:
     - port: 27017
       targetPort: 27017
+      name: mongodb
   selector:
     app: mongo

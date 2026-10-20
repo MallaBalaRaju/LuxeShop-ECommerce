@@ -1,34 +1,59 @@
-# Dependencies
+# ─── Node.js ──────────────────────────────────────────────────────────
 node_modules/
-
-# Environment files
-.env
-.env.local
-.env.production
-!.env.example
-
-# Terraform
-.terraform/
-*.tfstate
-*.tfstate.backup
-*.tfvars
-crash.log
-
-# Logs
-*.log
 npm-debug.log*
 
-# Build artifacts
+# ─── Environment files ────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ─── Kubernetes Secrets (never commit real secrets) ───────────────────
+k8s/secrets.yaml
+
+# ─── Terraform ────────────────────────────────────────────────────────
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+tfplan
+*.tfvars
+*.tfvars.json
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# ─── Test coverage ────────────────────────────────────────────────────
 coverage/
+
+# ─── Build artifacts ──────────────────────────────────────────────────
 build/
 dist/
 
-# IDE / Editor
+# ─── Logs ─────────────────────────────────────────────────────────────
+*.log
+
+# ─── IDE / Editor ─────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# OS artifacts
+# ─── OS artifacts ─────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+
+# ─── Credentials and keys ─────────────────────────────────────────────
+*.pem
+*.key
+kubeconfig
+kubeconfig.yaml
+.kube/
+
+# ─── Python cache ─────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+
+# ─── Docker ───────────────────────────────────────────────────────────
+docker-compose.override.yml

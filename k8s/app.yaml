@@ -2,15 +2,17 @@
 # LuxeShop Application Microservices Manifest (Backend, Frontend, HPA, Ingress)
 # ===================================================================
 
-# 1. Backend Secrets
+# 1. Backend Secrets (Template/Placeholder for Git; Inject via Secrets Manager or CI/CD)
 apiVersion: v1
 kind: Secret
 metadata:
   name: backend-secret
+  labels:
+    app: backend
 type: Opaque
 stringData:
   MONGO_URI: "mongodb://mongo-service:27017/luxeshop"
-  JWT_SECRET: "luxeshop_super_secret_jwt_key_2026"
+  JWT_SECRET: "luxeshop_dev_jwt_secret_change_in_production"
 ---
 # 2. Backend API Microservice Deployment
 apiVersion: apps/v1
@@ -21,6 +23,11 @@ metadata:
     app: backend
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: backend
@@ -29,12 +36,17 @@ spec:
       labels:
         app: backend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
         - name: backend
-          image: 606030504453.dkr.ecr.ap-south-1.amazonaws.com/backend:latest
-          imagePullPolicy: Always
+          image: 488510448595.dkr.ecr.ap-south-1.amazonaws.com/backend:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
+              name: http
           env:
             - name: MONGO_URI
               valueFrom:
@@ -57,18 +69,28 @@ spec:
             requests:
               cpu: "250m"
               memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
           readinessProbe:
             httpGet:
               path: /health
               port: 5000
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /health
               port: 5000
-            initialDelaySeconds: 15
-            periodSeconds: 20
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 3
+            failureThreshold: 3
 ---
 # 3. Backend ClusterIP Service
 apiVersion: v1
@@ -82,6 +104,7 @@ spec:
   ports:
     - port: 5000
       targetPort: 5000
+      name: http
   selector:
     app: backend
 ---
@@ -94,6 +117,11 @@ metadata:
     app: frontend
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: frontend
@@ -104,10 +132,11 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: 606030504453.dkr.ecr.ap-south-1.amazonaws.com/frontend:latest
-          imagePullPolicy: Always
+          image: 488510448595.dkr.ecr.ap-south-1.amazonaws.com/frontend:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
+              name: http
           resources:
             limits:
               cpu: "200m"
@@ -115,14 +144,29 @@ spec:
             requests:
               cpu: "100m"
               memory: "128Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_BIND_SERVICE
           readinessProbe:
             httpGet:
               path: /
               port: 3000
             initialDelaySeconds: 5
             periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
 ---
-# 5. Frontend NodePort Service
+# 5. Frontend NodePort Service (Optional direct node port for testing)
 apiVersion: v1
 kind: Service
 metadata:
@@ -135,6 +179,7 @@ spec:
     - port: 3000
       targetPort: 3000
       nodePort: 30007
+      name: http
   selector:
     app: frontend
 ---
@@ -215,23 +260,44 @@ spec:
     - Ingress
   ingress:
     - from:
+        # Allow requests from frontend pods
         - podSelector:
             matchLabels:
               app: frontend
+        # Allow scraping from Prometheus pods
         - podSelector:
             matchLabels:
               app: prometheus
+        # Allow traffic from ingress controllers in any namespace
+        - namespaceSelector: {}
       ports:
         - protocol: TCP
           port: 5000
 ---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: frontend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 3000
+---
 # 8. Ingress Controller Routing
+# NOTE: rewrite-target annotation removed to prevent stripping /api path prefix required by Express
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: luxeshop-ingress
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   ingressClassName: nginx
@@ -253,3 +319,4 @@ spec:
                 name: frontend-service
                 port:
                   number: 3000
+
