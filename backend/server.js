@@ -159,21 +159,23 @@ app.use((err, req, res, next) => {
 // MongoDB Connection
 // =========================
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/luxeshop';
+if (process.env.NODE_ENV !== 'test') {
+    const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/luxeshop';
 
-mongoose.connect(MONGO_URI)
-    .then(() => {
-        console.log('Successfully connected to MongoDB database');
-        // Start server only after DB connection is successful
-        app.listen(PORT, () => {
-            console.log(`Backend server running on port ${PORT}`);
-            console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    mongoose.connect(MONGO_URI)
+        .then(() => {
+            console.log('Successfully connected to MongoDB database');
+            // Start server only after DB connection is successful
+            app.listen(PORT, () => {
+                console.log(`Backend server running on port ${PORT}`);
+                console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+            });
+        })
+        .catch((error) => {
+            console.error('MongoDB database connection error:', error.message);
+            process.exit(1);
         });
-    })
-    .catch((error) => {
-        console.error('MongoDB database connection error:', error.message);
-        process.exit(1);
-    });
+}
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
