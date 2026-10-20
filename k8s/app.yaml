@@ -2,23 +2,12 @@
 # LuxeShop Application Microservices Manifest (Backend, Frontend, HPA, Ingress)
 # ===================================================================
 
-# 1. Backend Secrets (Template/Placeholder for Git; Inject via Secrets Manager or CI/CD)
-apiVersion: v1
-kind: Secret
-metadata:
-  name: backend-secret
-  labels:
-    app: backend
-type: Opaque
-stringData:
-  MONGO_URI: "mongodb://mongo-service:27017/luxeshop"
-  JWT_SECRET: "luxeshop_dev_jwt_secret_change_in_production"
----
-# 2. Backend API Microservice Deployment
+# 1. Backend API Microservice Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend
+  namespace: luxeshop
   labels:
     app: backend
 spec:
@@ -92,11 +81,12 @@ spec:
             timeoutSeconds: 3
             failureThreshold: 3
 ---
-# 3. Backend ClusterIP Service
+# 2. Backend ClusterIP Service
 apiVersion: v1
 kind: Service
 metadata:
   name: backend-service
+  namespace: luxeshop
   labels:
     app: backend
 spec:
@@ -108,11 +98,12 @@ spec:
   selector:
     app: backend
 ---
-# 4. Frontend Nginx Microservice Deployment
+# 3. Frontend Nginx Microservice Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
+  namespace: luxeshop
   labels:
     app: frontend
 spec:
@@ -166,11 +157,12 @@ spec:
             periodSeconds: 20
             timeoutSeconds: 3
 ---
-# 5. Frontend NodePort Service (Optional direct node port for testing)
+# 4. Frontend NodePort Service (direct node port for testing/access)
 apiVersion: v1
 kind: Service
 metadata:
   name: frontend-service
+  namespace: luxeshop
   labels:
     app: frontend
 spec:
@@ -183,11 +175,12 @@ spec:
   selector:
     app: frontend
 ---
-# 6. Horizontal Pod Autoscalers (HPA)
+# 5. Horizontal Pod Autoscalers (HPA)
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: backend-hpa
+  namespace: luxeshop
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -213,6 +206,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: frontend-hpa
+  namespace: luxeshop
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -228,11 +222,12 @@ spec:
           type: Utilization
           averageUtilization: 70
 ---
-# 7. Network Policies
+# 6. Network Policies
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: mongo-network-policy
+  namespace: luxeshop
 spec:
   podSelector:
     matchLabels:
@@ -252,6 +247,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: backend-network-policy
+  namespace: luxeshop
 spec:
   podSelector:
     matchLabels:
@@ -268,7 +264,7 @@ spec:
         - podSelector:
             matchLabels:
               app: prometheus
-        # Allow traffic from ingress controllers in any namespace
+        # Allow traffic from ingress controllers
         - namespaceSelector: {}
       ports:
         - protocol: TCP
@@ -278,6 +274,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: frontend-network-policy
+  namespace: luxeshop
 spec:
   podSelector:
     matchLabels:
@@ -291,12 +288,12 @@ spec:
         - protocol: TCP
           port: 3000
 ---
-# 8. Ingress Controller Routing
-# NOTE: rewrite-target annotation removed to prevent stripping /api path prefix required by Express
+# 7. Ingress Controller Routing
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: luxeshop-ingress
+  namespace: luxeshop
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
@@ -319,4 +316,3 @@ spec:
                 name: frontend-service
                 port:
                   number: 3000
-

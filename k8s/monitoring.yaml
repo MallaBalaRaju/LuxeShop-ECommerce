@@ -7,6 +7,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
+  namespace: luxeshop
 data:
   prometheus.yml: |
     global:
@@ -28,6 +29,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-alert-rules
+  namespace: luxeshop
 data:
   alert-rules.yml: |
     groups:
@@ -53,6 +55,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prometheus-deployment
+  namespace: luxeshop
   labels:
     app: prometheus
 spec:
@@ -88,6 +91,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: prometheus-service
+  namespace: luxeshop
   labels:
     app: prometheus
 spec:
@@ -99,21 +103,12 @@ spec:
   selector:
     app: prometheus
 ---
-# 5. Grafana Credentials Secret
-apiVersion: v1
-kind: Secret
-metadata:
-  name: grafana-secret
-type: Opaque
-stringData:
-  admin-user: "admin"
-  admin-password: "admin_secure_password"
----
-# 6. Grafana Dashboard Deployment
+# 5. Grafana Dashboard Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: grafana-deployment
+  namespace: luxeshop
   labels:
     app: grafana
 spec:
@@ -143,11 +138,12 @@ spec:
                   name: grafana-secret
                   key: admin-password
 ---
-# 7. Grafana NodePort Service
+# 6. Grafana NodePort Service
 apiVersion: v1
 kind: Service
 metadata:
   name: grafana-service
+  namespace: luxeshop
   labels:
     app: grafana
 spec:

@@ -64,14 +64,17 @@ LuxeShop/
 │   ├── .env.example        # Environment variable template
 │   └── Dockerfile
 ├── k8s/                    # Kubernetes manifests
-│   ├── app.yaml            # Backend + Frontend deployments and services
+│   ├── namespace.yaml      # Creates luxeshop namespace
+│   ├── app.yaml            # Backend + Frontend deployments, services, HPA, NetworkPolicy
 │   ├── database.yaml       # MongoDB StatefulSet
-│   ├── monitoring.yaml     # Prometheus + Grafana
+│   ├── monitoring.yaml     # Prometheus + Grafana deployments and services
 │   ├── storageclass.yaml   # AWS EKS StorageClass (disabled for Minikube)
-│   └── secrets.yaml        # Secret template (gitignored)
+│   ├── secrets.yaml.example# Secret template for Kubernetes
+│   └── secrets.yaml        # Actual secrets (gitignored)
 ├── terraform/              # AWS infrastructure as code
 │   ├── main.tf             # ECR, S3, EC2
-│   └── variables.tf        # Variables and outputs
+│   ├── variables.tf        # Input variable definitions
+│   └── outputs.tf          # Output values (ECR URLs, EC2 IP, S3 bucket)
 ├── monitoring/
 │   └── prometheus.yml      # Prometheus scrape config (Docker Compose)
 ├── docker-compose.yml      # All services for local development
@@ -183,15 +186,19 @@ docker build -t ecommerce-frontend:latest ./frontend
 
 ```bash
 # Create the namespace
-kubectl create namespace luxeshop
+kubectl apply -f k8s/namespace.yaml
 
-# Apply secrets (adjust values if needed)
+# Set up secrets from template (adjust values if needed)
+cp k8s/secrets.yaml.example k8s/secrets.yaml
 kubectl apply -f k8s/secrets.yaml
 
-# Deploy database, app, and monitoring
-kubectl apply -f k8s/database.yaml -n luxeshop
-kubectl apply -f k8s/app.yaml -n luxeshop
-kubectl apply -f k8s/monitoring.yaml -n luxeshop
+# Deploy database, application microservices, and monitoring
+kubectl apply -f k8s/database.yaml
+kubectl apply -f k8s/app.yaml
+kubectl apply -f k8s/monitoring.yaml
+
+# Or apply all manifests at once:
+# kubectl apply -f k8s/
 
 # Check status
 kubectl get pods -n luxeshop
