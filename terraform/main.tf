@@ -6,16 +6,11 @@
 #   2. One S3 bucket (optional assets / Terraform state)
 #   3. One EC2 instance (t2.micro — free-tier eligible, for demos)
 #
-# IMPORTANT: Run these commands before applying:
-#   export AWS_ACCESS_KEY_ID="your_key"
-#   export AWS_SECRET_ACCESS_KEY="your_secret"
-#   export AWS_DEFAULT_REGION="ap-south-1"
-#
 # Commands:
 #   terraform init
 #   terraform plan
-#   terraform apply     # creates resources (costs apply for EC2 if t2.micro limit exceeded)
-#   terraform destroy   # removes all resources
+#   terraform apply
+#   terraform destroy
 # ===================================================================
 
 terraform {
@@ -38,10 +33,48 @@ provider "aws" {
   }
 }
 
-# ─── Data: current AWS account ───────────────────────────────────────
+# ─── Variables ───────────────────────────────────────────────────────
+variable "aws_region" {
+  description = "AWS region to deploy to"
+  type        = string
+  default     = "ap-south-1"
+}
+
+variable "backend_repo_name" {
+  description = "ECR repository name for backend Docker image"
+  type        = string
+  default     = "backend"
+}
+
+variable "frontend_repo_name" {
+  description = "ECR repository name for frontend Docker image"
+  type        = string
+  default     = "frontend"
+}
+
+variable "instance_type" {
+  description = "EC2 instance type (t2.micro is free-tier eligible)"
+  type        = string
+  default     = "t2.micro"
+}
+
+# ─── Data: Current AWS Account ───────────────────────────────────────
 data "aws_caller_identity" "current" {}
 
-# ─── ECR: Backend image repository ───────────────────────────────────
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+  filter {
+    name   = "name"
+    values = ["al2023-ami-2023.*-x86_64"]
+  }
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+# ─── ECR: Repositories ───────────────────────────────────────────────
 resource "aws_ecr_repository" "backend" {
   name                 = var.backend_repo_name
   image_tag_mutability = "MUTABLE"
@@ -52,7 +85,6 @@ resource "aws_ecr_repository" "backend" {
   }
 }
 
-# ─── ECR: Frontend image repository ──────────────────────────────────
 resource "aws_ecr_repository" "frontend" {
   name                 = var.frontend_repo_name
   image_tag_mutability = "MUTABLE"
@@ -63,7 +95,7 @@ resource "aws_ecr_repository" "frontend" {
   }
 }
 
-# ─── S3: Optional bucket for assets or Terraform remote state ────────
+# ─── S3: Assets Bucket ───────────────────────────────────────────────
 resource "aws_s3_bucket" "assets" {
   bucket        = "luxeshop-assets-${data.aws_caller_identity.current.account_id}"
   force_destroy = true
@@ -84,20 +116,7 @@ resource "aws_s3_bucket_public_access_block" "assets" {
   restrict_public_buckets = true
 }
 
-# ─── EC2: Single instance for running Docker Compose (demo / free tier) ──
-data "aws_ami" "amazon_linux" {
-  most_recent = true
-  owners      = ["amazon"]
-  filter {
-    name   = "name"
-    values = ["al2023-ami-2023.*-x86_64"]
-  }
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-}
-
+# ─── EC2: Security Group & App Server ─────────────────────────────────
 resource "aws_security_group" "ec2_sg" {
   name        = "luxeshop-ec2-sg"
   description = "Allow HTTP, HTTPS and SSH access"
@@ -139,7 +158,7 @@ resource "aws_security_group" "ec2_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Restrict to your IP in production
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -158,7 +177,6 @@ resource "aws_instance" "app_server" {
   vpc_security_group_ids      = [aws_security_group.ec2_sg.id]
   associate_public_ip_address = true
 
-  # Install Docker & Docker Compose on startup
   user_data = <<-EOF
     #!/bin/bash
     dnf update -y
@@ -166,7 +184,6 @@ resource "aws_instance" "app_server" {
     systemctl start docker
     systemctl enable docker
     usermod -aG docker ec2-user
-    # Install Docker Compose plugin
     mkdir -p /usr/local/lib/docker/cli-plugins
     curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 \
       -o /usr/local/lib/docker/cli-plugins/docker-compose
@@ -182,4 +199,35 @@ resource "aws_instance" "app_server" {
   tags = {
     Name = "luxeshop-app-server"
   }
+}
+
+# ─── Outputs ─────────────────────────────────────────────────────────
+output "backend_ecr_url" {
+  description = "URL to push backend Docker image to ECR"
+  value       = aws_ecr_repository.backend.repository_url
+}
+
+output "frontend_ecr_url" {
+  description = "URL to push frontend Docker image to ECR"
+  value       = aws_ecr_repository.frontend.repository_url
+}
+
+output "s3_bucket_name" {
+  description = "Name of the S3 assets bucket"
+  value       = aws_s3_bucket.assets.id
+}
+
+output "ec2_public_ip" {
+  description = "Public IP of the EC2 app server"
+  value       = aws_instance.app_server.public_ip
+}
+
+output "ec2_public_dns" {
+  description = "Public DNS of the EC2 app server"
+  value       = aws_instance.app_server.public_dns
+}
+
+output "ec2_instance_id" {
+  description = "EC2 instance ID"
+  value       = aws_instance.app_server.id
 }

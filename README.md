@@ -60,26 +60,21 @@ LuxeShop/
 │   ├── routes/             # API route definitions
 │   ├── models/             # Mongoose schemas
 │   ├── middleware/         # Auth, rate-limiter, validator
-│   ├── tests/              # Jest test suites
-│   ├── .env.example        # Environment variable template
+│   ├── tests/              # Jest integration tests (app.test.js)
 │   └── Dockerfile
 ├── k8s/                    # Kubernetes manifests
-│   ├── namespace.yaml      # Creates luxeshop namespace
-│   ├── app.yaml            # Backend + Frontend deployments, services, HPA, NetworkPolicy
+│   ├── app.yaml            # Namespace, Backend + Frontend deployments, services, HPA, NetworkPolicy
 │   ├── database.yaml       # MongoDB StatefulSet
 │   ├── monitoring.yaml     # Prometheus + Grafana deployments and services
-│   ├── storageclass.yaml   # AWS EKS StorageClass (disabled for Minikube)
 │   ├── secrets.yaml.example# Secret template for Kubernetes
 │   └── secrets.yaml        # Actual secrets (gitignored)
 ├── terraform/              # AWS infrastructure as code
-│   ├── main.tf             # ECR, S3, EC2
-│   ├── variables.tf        # Input variable definitions
-│   └── outputs.tf          # Output values (ECR URLs, EC2 IP, S3 bucket)
+│   └── main.tf             # Consolidated AWS infrastructure (ECR, S3, EC2, vars, outputs)
 ├── monitoring/
 │   └── prometheus.yml      # Prometheus scrape config (Docker Compose)
 ├── docker-compose.yml      # All services for local development
 ├── Jenkinsfile             # CI/CD pipeline
-├── .env.example            # Root environment variable template
+├── .env.example            # Environment variable template
 ├── .gitignore
 └── README.md
 ```
@@ -185,16 +180,13 @@ docker build -t ecommerce-frontend:latest ./frontend
 ### 3c — Apply Kubernetes manifests
 
 ```bash
-# Create the namespace
-kubectl apply -f k8s/namespace.yaml
-
 # Set up secrets from template (adjust values if needed)
 cp k8s/secrets.yaml.example k8s/secrets.yaml
 kubectl apply -f k8s/secrets.yaml
 
-# Deploy database, application microservices, and monitoring
-kubectl apply -f k8s/database.yaml
+# Deploy application microservices (creates namespace), database, and monitoring
 kubectl apply -f k8s/app.yaml
+kubectl apply -f k8s/database.yaml
 kubectl apply -f k8s/monitoring.yaml
 
 # Or apply all manifests at once:

@@ -1,7 +1,15 @@
 # ===================================================================
-# LuxeShop Application Microservices Manifest (Backend, Frontend, HPA, Ingress)
+# LuxeShop Application Microservices Manifest (Namespace, Backend, Frontend, HPA, Ingress)
 # ===================================================================
 
+# 0. Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: luxeshop
+  labels:
+    name: luxeshop
+---
 # 1. Backend API Microservice Deployment
 apiVersion: apps/v1
 kind: Deployment
