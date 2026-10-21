@@ -45,7 +45,11 @@ let orderId;
 // Setup / Teardown
 // ==========================================
 beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
+    mongoServer = await MongoMemoryServer.create({
+        binary: {
+            version: '7.0.14'
+        }
+    });
     const mongoUri = mongoServer.getUri();
     // Disconnect any existing connection before connecting to the test in-memory DB
     if (mongoose.connection.readyState !== 0) {
