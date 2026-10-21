@@ -61,10 +61,14 @@ beforeAll(async () => {
 }, 360000);
 
 afterAll(async () => {
-    await mongoose.connection.dropDatabase();
-    await mongoose.connection.close();
-    await mongoServer.stop();
-}, 60000);
+    if (mongoose.connection.readyState !== 0) {
+        try { await mongoose.connection.dropDatabase(); } catch (e) {}
+        try { await mongoose.connection.close(); } catch (e) {}
+    }
+    if (mongoServer) {
+        try { await mongoServer.stop(); } catch (e) {}
+    }
+}, 30000);
 
 afterEach(async () => {
     // Clear prom-client metrics between tests to avoid label conflicts

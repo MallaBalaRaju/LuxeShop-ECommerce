@@ -43,6 +43,9 @@ pipeline {
         // Stage 2: Install dependencies and run tests
         // ─────────────────────────────────────────────
         stage('2. Install & Test') {
+            environment {
+                MONGOMS_SYSTEM_BINARY = '/var/jenkins_home/.cache/mongodb-binaries/mongod'
+            }
             steps {
                 dir('backend') {
                     sh '''
@@ -50,6 +53,14 @@ pipeline {
                         npm ci
 
                         echo "Running backend tests..."
+                        if [ ! -f "$MONGOMS_SYSTEM_BINARY" ]; then
+                            mkdir -p /var/jenkins_home/.cache/mongodb-binaries
+                            curl -fsSL https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-debian12-7.0.14.tgz -o /tmp/mongodb.tgz
+                            tar --wildcards -xzf /tmp/mongodb.tgz -C /var/jenkins_home/.cache/mongodb-binaries/ --strip-components=2 "*/bin/mongod"
+                            chmod +x "$MONGOMS_SYSTEM_BINARY"
+                            rm -f /tmp/mongodb.tgz
+                        fi
+
                         npm test
                     '''
                 }
