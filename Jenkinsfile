@@ -22,6 +22,9 @@ pipeline {
 
         // GitHub repository
         GIT_REPO = 'https://github.com/MallaBalaRaju/LuxeShop-ECommerce'
+
+        // MongoDB memory server version for Debian 12+/13 CI runner
+        MONGOMS_VERSION = '7.0.14'
     }
 
     stages {

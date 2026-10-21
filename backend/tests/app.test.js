@@ -45,9 +45,11 @@ let orderId;
 // Setup / Teardown
 // ==========================================
 beforeAll(async () => {
+    // On Debian 12+/13 (Jenkins CI), MongoMemoryServer requires >= 7.0.3; on Windows dev use cached 6.0.14
+    const mongoVersion = process.env.MONGOMS_VERSION || (process.platform === 'win32' ? '6.0.14' : '7.0.14');
     mongoServer = await MongoMemoryServer.create({
         binary: {
-            version: '7.0.14'
+            version: mongoVersion
         }
     });
     const mongoUri = mongoServer.getUri();
