@@ -12,7 +12,7 @@ services:
     image: mongo:6.0
     container_name: mongo-container
     ports:
-      - "127.0.0.1:27017:27017"   # Exposed only to localhost for security
+      - "${MONGO_HOST_PORT:-127.0.0.1:27018}:27017"   # Avoids collision with local host MongoDB service
     environment:
       - MONGO_INITDB_DATABASE=luxeshop
     volumes:

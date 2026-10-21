@@ -121,6 +121,23 @@ app.get('/metrics', async (req, res) => {
     }
 });
 
+// Root endpoint — API discovery & status
+app.get('/', (req, res) => {
+    res.status(200).json({
+        message: 'LuxeShop Backend API is running',
+        version: '2.0.0',
+        frontend: 'http://localhost:3000',
+        endpoints: {
+            health: '/health',
+            metrics: '/metrics',
+            products: '/api/products',
+            auth: '/api/auth',
+            orders: '/api/orders',
+            wishlist: '/api/wishlist'
+        }
+    });
+});
+
 // Enhanced Health Check
 app.get('/health', async (req, res) => {
     const dbState = mongoose.connection.readyState;

@@ -65,7 +65,21 @@ afterEach(async () => {
 });
 
 // ==========================================
-// 1. Health Endpoint
+// 1. Root Endpoint
+// ==========================================
+describe('Root Endpoint', () => {
+    it('GET / should return 200 with service info and endpoints', async () => {
+        const res = await request(app).get('/');
+        expect(res.statusCode).toBe(200);
+        expect(res.body.message).toContain('LuxeShop Backend API is running');
+        expect(res.body.frontend).toBe('http://localhost:3000');
+        expect(res.body.endpoints).toBeDefined();
+        expect(res.body.endpoints.health).toBe('/health');
+    });
+});
+
+// ==========================================
+// 2. Health Endpoint
 // ==========================================
 describe('Health Endpoint', () => {
     it('GET /health should return 200 with UP status when DB is connected', async () => {
